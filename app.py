@@ -1,8 +1,9 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify
 import sqlite3
 
 app = Flask(__name__)
 
+# Criar banco de dados e tabela de produtos
 def criar_tabela():
     conn = sqlite3.connect("estoque.db")
     cursor = conn.cursor()
@@ -18,10 +19,7 @@ def criar_tabela():
     conn.commit()
     conn.close()
 
-@app.route("/")
-def index():
-    return render_template("index.html")
-
+# Rota para adicionar um produto
 @app.route("/produtos", methods=["POST"])
 def adicionar_produto():
     data = request.json
@@ -33,6 +31,7 @@ def adicionar_produto():
     conn.close()
     return jsonify({"mensagem": "Produto adicionado com sucesso!"}), 201
 
+# Rota para listar todos os produtos
 @app.route("/produtos", methods=["GET"])
 def listar_produtos():
     conn = sqlite3.connect("estoque.db")
@@ -42,6 +41,7 @@ def listar_produtos():
     conn.close()
     return jsonify(produtos)
 
+# Rota para deletar um produto
 @app.route("/produtos/<int:id>", methods=["DELETE"])
 def deletar_produto(id):
     conn = sqlite3.connect("estoque.db")

@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const formProduto = document.getElementById("form-produto");
     const tabelaProdutos = document.getElementById("tabela-produtos");
     const estoqueBaixoLista = document.getElementById("estoque-baixo");
+    const historicoVendas = document.getElementById("historico-vendas");
 
     // Função para carregar produtos na tabela
     function carregarProdutos() {
@@ -44,12 +45,25 @@ document.addEventListener("DOMContentLoaded", function () {
           });
     });
 
-    // Função para vender um produto
+    // Função modificada para vender produto com data e hora
     window.venderProduto = function (id) {
-        fetch(`/vender/${id}`, { method: "POST" })
-            .then(response => response.json())
-            .then(() => carregarProdutos())
-            .catch(error => console.error("Erro ao vender produto:", error));
+        const dataVenda = new Date().toISOString();
+        const venda = {
+            produtoId: id,
+            dataHora: dataVenda
+        };
+        
+        fetch(`/vender/${id}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(venda)
+        })
+        .then(response => response.json())
+        .then(() => {
+            carregarProdutos();
+            carregarHistoricoVendas();
+        })
+        .catch(error => console.error("Erro ao vender produto:", error));
     };
 
     // Função para carregar estoque baixo
@@ -65,6 +79,44 @@ document.addEventListener("DOMContentLoaded", function () {
             });
     };
 
+    // Nova função para carregar histórico de vendas
+    function carregarHistoricoVendas() {
+        fetch("/historico_vendas")
+            .then(response => response.json())
+            .then(vendas => {
+                historicoVendas.innerHTML = "";
+                vendas.forEach(venda => {
+                    const data = new Date(venda.dataHora).toLocaleString();
+                    let linha = `<tr>
+                        <td>${venda.produto}</td>
+                        <td>${data}</td>
+                        <td>R$ ${venda.preco.toFixed(2)}</td>
+                        <td>${venda.categoria}</td>
+                    </tr>`;
+                    historicoVendas.innerHTML += linha;
+                });
+            });
+    }
+    // Função para excluir um produto
+    function deleteProduto(produtoId) {
+        fetch(`/produtos/${produtoId}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erro ao excluir o produto');
+            }
+            return response.json();
+        })
+        .then(data => {
+            alert(data.mensagem);
+            carregarProdutos(); // Recarrega a lista de produtos após a exclusão
+        })
+        .catch(error => {
+            alert(error.message);
+        });
+    }
     // Carregar produtos ao iniciar a página
     carregarProdutos();
+    carregarHistoricoVendas();
 });

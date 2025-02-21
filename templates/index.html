@@ -4,21 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle de Estoque</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script defer src="/static/script.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <h1>Controle de Estoque</h1>
-
-    <form id="produtoForm">
-        <input type="text" id="nome" placeholder="Nome do Produto" required>
+    
+    <!-- Formulário para adicionar produto -->
+    <h2>Adicionar Produto</h2>
+    <form id="form-produto">
+        <input type="text" id="nome" placeholder="Nome" required>
         <input type="number" id="preco" placeholder="Preço" required>
         <input type="number" id="quantidade" placeholder="Quantidade" required>
         <input type="text" id="categoria" placeholder="Categoria">
-        <button type="submit">Adicionar Produto</button>
+        <button type="submit">Adicionar</button>
     </form>
-
+    
+    <!-- Tabela de produtos -->
     <h2>Lista de Produtos</h2>
-    <table>
+    <table border="1">
         <thead>
             <tr>
                 <th>ID</th>
@@ -26,14 +30,19 @@
                 <th>Preço</th>
                 <th>Quantidade</th>
                 <th>Categoria</th>
-                <th>Ação</th>
+                <th>Ações</th>
             </tr>
         </thead>
-        <tbody id="produtoLista">
-            <!-- Os produtos serão carregados aqui -->
+        <tbody id="tabela-produtos">
+            <!-- Produtos serão carregados aqui via JS -->
         </tbody>
     </table>
-
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    
+    <!-- Relatório de estoque baixo -->
+    <h2>Relatório de Estoque Baixo</h2>
+    <button onclick="carregarEstoqueBaixo()">Ver Estoque Baixo</button>
+    <ul id="estoque-baixo">
+        <!-- Produtos com estoque baixo aparecerão aqui -->
+    </ul>
 </body>
 </html>

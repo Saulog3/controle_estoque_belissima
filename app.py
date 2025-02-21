@@ -3,38 +3,29 @@ import sqlite3
 
 app = Flask(__name__)
 
-def criar_tabela():
+# Criar tabela se não existir
+def init_db():
     conn = sqlite3.connect("estoque.db")
     cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS produtos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            preco REAL NOT NULL,
-            quantidade INTEGER NOT NULL,
-            categoria TEXT
-        )
-    """)
+    cursor.execute('''CREATE TABLE IF NOT EXISTS produtos (
+                      id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      nome TEXT NOT NULL,
+                      preco REAL NOT NULL,
+                      quantidade INTEGER NOT NULL,
+                      categoria TEXT)''')
     conn.commit()
     conn.close()
 
-@app.route("/")
+init_db()
+
+# Rota para exibir a página inicial
+@app.route('/')
 def index():
     return render_template("index.html")
 
-@app.route("/produtos", methods=["POST"])
-def adicionar_produto():
-    data = request.json
-    conn = sqlite3.connect("estoque.db")
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO produtos (nome, preco, quantidade, categoria) VALUES (?, ?, ?, ?)",
-                   (data["nome"], data["preco"], data["quantidade"], data.get("categoria", "")))
-    conn.commit()
-    conn.close()
-    return jsonify({"mensagem": "Produto adicionado com sucesso!"}), 201
-
-@app.route("/produtos", methods=["GET"])
-def listar_produtos():
+# Rota para obter lista de produtos
+@app.route('/produtos', methods=['GET'])
+def get_produtos():
     conn = sqlite3.connect("estoque.db")
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM produtos")
@@ -42,15 +33,54 @@ def listar_produtos():
     conn.close()
     return jsonify(produtos)
 
-@app.route("/produtos/<int:id>", methods=["DELETE"])
-def deletar_produto(id):
+# Rota para adicionar um produto
+@app.route('/produtos', methods=['POST'])
+def add_produto():
+    data = request.json
+    nome = data.get("nome")
+    preco = data.get("preco")
+    quantidade = data.get("quantidade")
+    categoria = data.get("categoria")
+    
+    if not nome or preco is None or quantidade is None:
+        return jsonify({"erro": "Dados inválidos!"}), 400
+    
     conn = sqlite3.connect("estoque.db")
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM produtos WHERE id = ?", (id,))
+    cursor.execute("INSERT INTO produtos (nome, preco, quantidade, categoria) VALUES (?, ?, ?, ?)", 
+                   (nome, preco, quantidade, categoria))
     conn.commit()
     conn.close()
-    return jsonify({"mensagem": "Produto removido com sucesso!"})
+    
+    return jsonify({"mensagem": "Produto adicionado com sucesso!"})
 
-if __name__ == "__main__":
-    criar_tabela()
+# Rota para vender um produto (diminuir a quantidade)
+@app.route('/vender/<int:produto_id>', methods=['POST'])
+def vender_produto(produto_id):
+    conn = sqlite3.connect("estoque.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT quantidade FROM produtos WHERE id = ?", (produto_id,))
+    produto = cursor.fetchone()
+    
+    if produto and produto[0] > 0:
+        nova_quantidade = produto[0] - 1
+        cursor.execute("UPDATE produtos SET quantidade = ? WHERE id = ?", (nova_quantidade, produto_id))
+        conn.commit()
+        conn.close()
+        return jsonify({"mensagem": "Venda realizada com sucesso!"})
+    
+    conn.close()
+    return jsonify({"erro": "Estoque insuficiente!"}), 400
+
+# Rota para obter relatório de estoque baixo
+@app.route('/estoque_baixo', methods=['GET'])
+def estoque_baixo():
+    conn = sqlite3.connect("estoque.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM produtos WHERE quantidade < 5")
+    produtos = cursor.fetchall()
+    conn.close()
+    return render_template("estoque_baixo.html", produtos=produtos)
+
+if __name__ == '__main__':
     app.run(debug=True)
